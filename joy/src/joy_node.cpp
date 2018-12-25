@@ -154,7 +154,7 @@ public:
   {
     if (ff_fd_ == -1)
       return;//we arent ready yet
-    
+
     int size = msg->array.size();
     for (int i = 0; i < size; i++)
     {
@@ -166,17 +166,17 @@ public:
         joy_effect_.type = FF_RUMBLE;
         if (msg->array[i].id == 0)
           joy_effect_.u.rumble.strong_magnitude = ((float)(1<<15))*msg->array[i].intensity;
-        else  
+        else
           joy_effect_.u.rumble.weak_magnitude = ((float)(1<<15))*msg->array[i].intensity;
 
         joy_effect_.replay.length = 1000;
         joy_effect_.replay.delay = 0;
-		
+
         update_feedback_ = true;
       }
     }
   }
-  
+
   ///\brief Opens joystick port, reads from port and publishes while node is active
   int main(int argc, char **argv)
   {
@@ -296,7 +296,7 @@ public:
       if (joy_def_ff_.length())
       {
         ff_fd_ = open(joy_def_ff_.c_str(), O_RDWR);
-	
+
         /* Set the gain of the device*/
         int gain = 100;           /* between 0 and 100 */
         struct input_event ie;      /* structure used to communicate with the driver */
@@ -315,7 +315,7 @@ public:
         joy_effect_.u.rumble.weak_magnitude = 0;
         joy_effect_.replay.length = 1000;
         joy_effect_.replay.delay = 0;
-		
+
         //upload the effect
         int ret = ioctl(ff_fd_, EVIOCSFF, &joy_effect_);
       }
@@ -370,7 +370,7 @@ public:
             update_feedback_ = false;
           }
         }
-        
+
         if (FD_ISSET(joy_fd, &set))
         {
           if (read(joy_fd, &event, sizeof(js_event)) == -1 && errno != EAGAIN)
@@ -525,13 +525,24 @@ public:
 
         diagnostic_.update();
       } // End of joystick open loop.
-      
+
       close(ff_fd_);
       close(joy_fd);
       ros::spinOnce();
       if (nh_.ok())
       {
         ROS_ERROR("Connection to joystick device lost unexpectedly. Will reopen.");
+        for(unsigned int i=0;i<joy_msg.buttons.size();i++){
+          joy_msg.buttons[i] = 0.0;
+          last_published_joy_msg.buttons[i] = 0.0;
+          sticky_buttons_joy_msg.buttons[i] = 0.0;
+        }
+        for(unsigned int i=0;i<joy_msg.axes.size();i++){
+          joy_msg.axes[i] = 0.0;
+          last_published_joy_msg.axes[i] = 0.0;
+          sticky_buttons_joy_msg.axes[i] = 0.0;
+        }
+        pub_.publish(joy_msg);
       }
     }
 
